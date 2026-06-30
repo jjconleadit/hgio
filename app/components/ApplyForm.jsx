@@ -121,7 +121,7 @@ export default function ApplyForm({ refFromUrl }) {
           {errors.follow && <ErrorText>{errors.follow}</ErrorText>}
         </Question>
 
-        <Question n={3} title="retweet the pinned p0st" done={clicked.rt}>
+        <Question n={3} title="retweet and like the pinned p0st" done={clicked.rt}>
           <TaskLink href={TWEET_URL} onClick={() => handleTaskClick('rt')} label="0pen p0st & RT" done={clicked.rt} />
           {errors.rt && <ErrorText>{errors.rt}</ErrorText>}
           <p className="font-mono text-[11px] text-ink/45 mt-1.5">plain RT. n0 capti0n needed f0r this 0ne.</p>
