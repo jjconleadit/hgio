@@ -147,7 +147,7 @@ export default function ApplyForm({ refFromUrl }) {
           )}
         </Question>
 
-        <Question n={5} title='c0mment "r00mba sent me"' done={unlocked.comment}>
+        <Question n={5} title='c0mment "r00mba sent me and tag 2 friends"' done={unlocked.comment}>
           <TaskLink href={TWEET_URL} onClick={() => handleTaskClick('comment')} label="c0mment" done={clicked.comment} />
           {clicked.comment && !unlocked.comment && <UnlockingNote />}
           {unlocked.comment && (
