@@ -187,6 +187,17 @@ export default function Studio({ xHandle }) {
   const baseImgRef = useRef(null);
   const dragState = useRef(null);
 
+  // Offscreen cache of the current recolored base art. This is the
+  // expensive part (a full 500x500 per-pixel HSL pass) -- it's only ever
+  // recomputed when `hue` or `baseId` actually changes, never when the
+  // person types into the bubble or drags it around. Without this split,
+  // every keystroke or drag re-ran the full pixel pass on the visible
+  // canvas, which on slower/real phones can take well over a frame and
+  // stalls the main thread -- that stall is what reads as the bubble
+  // "jumping" or "blinking": the browser falls behind, then catches up
+  // all at once once the heavy work finally finishes.
+  const recoloredCacheRef = useRef(null);
+
   const [baseId, setBaseId] = useState(BASES[0].id);
   const [hue, setHue] = useState(0);
   const [ready, setReady] = useState(false);
@@ -214,26 +225,57 @@ export default function Studio({ xHandle }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [baseId]);
 
-  const render = useCallback((forExport = false) => {
+  // Cheap pass: blit the cached recolored base onto the visible canvas,
+  // then draw the bubble on top. Runs on every keystroke / drag tick, but
+  // costs almost nothing since it's just a single drawImage plus some
+  // vector paths -- no per-pixel work.
+  const compositeFrame = useCallback((forExport = false) => {
     const canvas = canvasRef.current;
-    if (!canvas || !baseImgRef.current) return;
+    const cache = recoloredCacheRef.current;
+    if (!canvas || !cache) return;
     const ctx = canvas.getContext('2d');
 
-    drawHueShiftedBase(ctx, baseImgRef.current, hue, CANVAS_SIZE);
+    ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    ctx.drawImage(cache, 0, 0);
 
     const trimmed = textDraft.trim();
     if (bubble && (trimmed || !forExport)) {
       drawSpeechBubble(ctx, bubble, trimmed || '\u2026');
     }
-  }, [hue, bubble, textDraft]);
+  }, [bubble, textDraft]);
+
+  // Expensive pass: recompute the cached recolored base. Only depends on
+  // the loaded image and hue -- never on bubble/text -- so typing and
+  // dragging never touch this.
+  useEffect(() => {
+    if (!ready || !baseImgRef.current) return;
+    let cache = recoloredCacheRef.current;
+    if (!cache) {
+      cache = document.createElement('canvas');
+      cache.width = CANVAS_SIZE;
+      cache.height = CANVAS_SIZE;
+      recoloredCacheRef.current = cache;
+    }
+    const cacheCtx = cache.getContext('2d');
+    drawHueShiftedBase(cacheCtx, baseImgRef.current, hue, CANVAS_SIZE);
+    compositeFrame();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, hue, baseId]);
 
   useEffect(() => {
-    if (ready) render();
-  }, [ready, render]);
+    if (ready) compositeFrame();
+  }, [ready, compositeFrame]);
+
+  const textareaRef = useRef(null);
 
   function handleAddBubble() {
     if (bubble) return; // only one bubble -- keep editing the one they have
     setBubble(defaultBubblePosition(baseId));
+    // Focus once, right after the textarea actually appears -- not via
+    // autoFocus, which would re-fire focus-steal on every re-render that
+    // happens to pass through this branch (typing, dragging, hue changes
+    // all re-render this component while `bubble` stays truthy).
+    requestAnimationFrame(() => textareaRef.current?.focus());
   }
 
   function handleTextDraftChange(e) {
@@ -291,7 +333,7 @@ export default function Studio({ xHandle }) {
   function handleDownload() {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    render(true);
+    compositeFrame(true);
     requestAnimationFrame(() => {
       canvas.toBlob((blob) => {
         if (!blob) return;
@@ -303,7 +345,7 @@ export default function Studio({ xHandle }) {
         URL.revokeObjectURL(url);
         // restore the on-screen editing view (with the placeholder bubble,
         // if the text was empty) after the export-only render pass above
-        render(false);
+        compositeFrame(false);
       }, 'image/png');
     });
   }
@@ -426,10 +468,10 @@ export default function Studio({ xHandle }) {
               <div>
                 <div className="flex gap-2">
                   <textarea
+                    ref={textareaRef}
                     value={textDraft}
                     onChange={handleTextDraftChange}
                     maxLength={TEXT_MAX_LEN}
-                    autoFocus
                     rows={2}
                     placeholder="y0u missed this 0ne"
                     className="flex-1 border-2 border-ink/30 focus:border-ink rounded-md px-3 py-2.5 bg-bone focus:bg-paper transition-colors duration-150 font-body text-sm resize-none"
