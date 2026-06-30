@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: 'Archivo Black', 'Arial Black', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+  --font-body: 'Space Grotesk', 'Helvetica Neue', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #EDE8DC;
+  color: #15120F;
+  font-family: var(--font-body);
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(21,18,15,0.06) 1px, transparent 0);
+  background-size: 22px 22px;
+}
+
+::selection {
+  background: #FF4D1C;
+  color: #EDE8DC;
+}
+
+/* visible focus ring everywhere, no outline removal without replacement */
+:focus-visible {
+  outline: 3px solid #FF4D1C;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.strike-reveal {
+  position: relative;
+  display: inline-block;
+}
+
+.strike-reveal::after {
+  content: '';
+  position: absolute;
+  left: -2%;
+  right: -2%;
+  top: 50%;
+  height: 0.16em;
+  background: currentColor;
+  transform: translateY(-50%) scaleX(0);
+  transform-origin: left;
+  animation: strike-grow 0.6s ease-out forwards;
+  animation-delay: 0.4s;
+}
+
+@keyframes strike-grow {
+  to { transform: translateY(-50%) scaleX(1); }
+}
+
+.noise-card {
+  background-image:
+    repeating-linear-gradient(0deg, rgba(21,18,15,0.025) 0px, rgba(21,18,15,0.025) 1px, transparent 1px, transparent 3px);
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
