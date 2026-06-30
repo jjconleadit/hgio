@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { isValidHandle, isValidWallet, isValidXLink } from '@/lib/validate';
 
-const TWEET_URL = 'https://x.com/r00mba_';
+const TWEET_URL = 'https://x.com/r00mba_/status/2072006384380514669';
 const UNLOCK_DELAY_MS = 3000;
 
 export default function ApplyForm({ refFromUrl }) {
@@ -117,7 +117,7 @@ export default function ApplyForm({ refFromUrl }) {
         </Question>
 
         <Question n={2} title="f0ll0w @r00mba_" done={clicked.follow}>
-          <TaskLink href={TWEET_URL} onClick={() => handleTaskClick('follow')} label="f0ll0w" done={clicked.follow} />
+          <TaskLink href="https://x.com/r00mba_" onClick={() => handleTaskClick('follow')} label="f0ll0w" done={clicked.follow} />
           {errors.follow && <ErrorText>{errors.follow}</ErrorText>}
         </Question>
 
